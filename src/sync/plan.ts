@@ -45,7 +45,7 @@ export interface NotionSourceMeta {
 const json = (obj: unknown): string => JSON.stringify(obj, null, 2) + "\n";
 
 const MARKER_FILENAME = ".notion-sync.json";
-const LAYOUT_VERSION = 2; // 2: Claude manifest version derived from version_id (forces one refresh)
+const LAYOUT_VERSION = 3; // 2: Claude manifest version from version_id; 3: root plugin.json version too (each forces one refresh)
 
 export function pluginDir(pluginsDir: string, slug: string): string {
   return `${pluginsDir}/${slug}`;
@@ -92,6 +92,17 @@ export function notionVersion(versionId: string): string {
 }
 
 /**
+ * The root Agent Plugins manifest as supplied, plus a `version` (Codex and other
+ * clients read only this file) when it has none. Key order is preserved.
+ */
+export function withVersion(plugin: PluginInput, rootManifest: FileContent): string {
+  const parsed = JSON.parse(text(rootManifest)) as Record<string, unknown>;
+  const v = parsed.version;
+  if (typeof v === "string" && v.trim()) return text(rootManifest);
+  return json({ ...parsed, version: notionVersion(plugin.versionId) });
+}
+
+/**
  * Claude still uses its legacy manifest location and requires metadata that is
  * optional in the Agent Plugins standard. Preserve the standard manifest as
  * supplied, filling only those missing Claude fields in the derived copy.
@@ -129,7 +140,7 @@ export function buildPluginFiles(
   const root = pluginDir(pluginsDir, plugin.slug);
   const files: Record<string, FileContent> = {};
   for (const [rel, content] of Object.entries(plugin.files ?? {})) {
-    files[`${root}/${rel}`] = content;
+    files[`${root}/${rel}`] = rel === "plugin.json" ? withVersion(plugin, content) : content;
   }
   if (plugin.files) {
     const manifest = plugin.files["plugin.json"];

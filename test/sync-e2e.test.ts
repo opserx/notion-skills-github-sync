@@ -73,6 +73,7 @@ describe("whole-plugin publication", () => {
     expect(target.json<Record<string, unknown>>("plugins/finance/plugin.json")).toEqual({
       $schema: "https://agent-plugins.org/schema/1.0.0/plugin.json",
       name: "finance",
+      version: "1.0.0-notion.pv1v1v1",
     });
     expect(target.json<Record<string, unknown>>("plugins/finance/.claude-plugin/plugin.json")).toEqual({
       $schema: "https://agent-plugins.org/schema/1.0.0/plugin.json",
@@ -89,7 +90,7 @@ describe("whole-plugin publication", () => {
     expect(target.json<Record<string, unknown>>("plugins/finance/.notion-sync.json")).toEqual({
       source: "notion",
       syncedBy: "notion-skills-github-sync",
-      layoutVersion: 2,
+      layoutVersion: 3,
       notion: {
         env: "dev",
         skillsDataSourceId: "ds-1",
