@@ -45,7 +45,7 @@ export interface NotionSourceMeta {
 const json = (obj: unknown): string => JSON.stringify(obj, null, 2) + "\n";
 
 const MARKER_FILENAME = ".notion-sync.json";
-const LAYOUT_VERSION = 1;
+const LAYOUT_VERSION = 2; // 2: Claude manifest version derived from version_id (forces one refresh)
 
 export function pluginDir(pluginsDir: string, slug: string): string {
   return `${pluginsDir}/${slug}`;
@@ -81,6 +81,17 @@ function text(content: FileContent): string {
 }
 
 /**
+ * Claude Code only re-installs a plugin when its version string changes, so a
+ * constant "1.0.0" would freeze users on their first copy. Derive the version
+ * from the plugin's Notion `version_id` (a content hash that moves whenever any
+ * of its skills change) as a semver pre-release: 1.0.0-notion.<12 chars>.
+ */
+export function notionVersion(versionId: string): string {
+  const tag = versionId.replace(/[^0-9A-Za-z]/g, "").slice(0, 12);
+  return tag ? `1.0.0-notion.${tag}` : "1.0.0";
+}
+
+/**
  * Claude still uses its legacy manifest location and requires metadata that is
  * optional in the Agent Plugins standard. Preserve the standard manifest as
  * supplied, filling only those missing Claude fields in the derived copy.
@@ -96,7 +107,7 @@ export function buildClaudePluginManifest(
   return json({
     ...parsed,
     name: nonEmpty(parsed.name) ? parsed.name : plugin.slug,
-    version: nonEmpty(parsed.version) ? parsed.version : "1.0.0",
+    version: nonEmpty(parsed.version) ? parsed.version : notionVersion(plugin.versionId),
     description: nonEmpty(parsed.description) ? parsed.description : plugin.description,
     author: parsed.author ?? { name: plugin.name || "Skills Team" },
   });

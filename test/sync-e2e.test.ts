@@ -77,7 +77,7 @@ describe("whole-plugin publication", () => {
     expect(target.json<Record<string, unknown>>("plugins/finance/.claude-plugin/plugin.json")).toEqual({
       $schema: "https://agent-plugins.org/schema/1.0.0/plugin.json",
       name: "finance",
-      version: "1.0.0",
+      version: "1.0.0-notion.pv1v1v1",
       description: "Finance team skills.",
       author: { name: "Finance" },
     });
@@ -89,7 +89,7 @@ describe("whole-plugin publication", () => {
     expect(target.json<Record<string, unknown>>("plugins/finance/.notion-sync.json")).toEqual({
       source: "notion",
       syncedBy: "notion-skills-github-sync",
-      layoutVersion: 1,
+      layoutVersion: 2,
       notion: {
         env: "dev",
         skillsDataSourceId: "ds-1",
@@ -358,4 +358,12 @@ test("commit reporting is plugin-oriented", async () => {
   expect(target.commits[0]!.message).toContain("notion-skills sync: 1 plugin(s)");
   expect(target.commits[0]!.message).not.toContain("skill(s)");
   expect(target.commits[0]!.message).toContain("Plugins: finance");
+});
+
+import { notionVersion } from "../src/sync/plan.ts";
+import { test as t2, expect as e2 } from "bun:test";
+t2("notionVersion derives a changing semver pre-release from version_id", () => {
+  e2(notionVersion("ba9d2c7735c0029282f9f8e7bef99b438c51ad416f82ca8a8d6ce56c5a1fa95c")).toBe("1.0.0-notion.ba9d2c7735c0");
+  e2(notionVersion("43dd93dd612651c00ebb")).not.toBe(notionVersion("ba9d2c7735c0029282f9"));
+  e2(notionVersion("")).toBe("1.0.0");
 });
